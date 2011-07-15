@@ -1,0 +1,25 @@
+I started to play around with the Arduino, as it is an awesome platform to 
+start doing some hardware shit. For sure I started with a project that was
+way to complicated for me (read about it at http://renegade.johnwulf.com), 
+but I finally got the hardware done. As I am really a software guy, even 
+though I studed EE, I felt that the software would benefit from some 
+overhaul, at least I needed that for my project.
+
+The repository contains my fork of existing Arduino libraries. These are not
+the Arduino core libraries, but device specific and other libraries. The goal
+of this is to bring the libraries to a "production" level and mix some object
+oriented concepts into the Arduino libraries that promote easier reuse, 
+greater flexibility, and faster development. 
+
+At the moment, everything is structured so that it can be dropped into the 
+Arduino enviroment, but at the same time can be compiled as a library and 
+used outside of the the Arduino IDE, e.g. Eclipse, WinAVR, or the Atmel 
+AVR Studio. The development itself is done in Eclipse on OS X using the 
+AVR tool chain.
+
+For more information, please go to http://arduino.johnwulf.com
+
+Anyway, this is just a start at this point, so any input is appreciated. In 
+any case, I hope people will find some value in this and have fun.
+
+John Wulf
