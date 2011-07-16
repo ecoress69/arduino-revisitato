@@ -6,9 +6,10 @@
 #ifndef __DS1307RTC_h__
 #define __DS1307RTC_h__
 
-#define DEBUG 1
 #include <WProgram.h>
 #include <Time.h>
+
+#define RTC DS1307RTC::instance
 
 typedef enum e_DS1307SquareWaveRate {
 	DS1307_SQWE_1HZ = 0x00,
@@ -19,22 +20,76 @@ typedef enum e_DS1307SquareWaveRate {
 
 // library interface description
 class DS1307RTC {
-  // user-accessible "public" interface
   public:
-    DS1307RTC();
+    static DS1307RTC instance;
 
 		/*
-		 *Fundamental operations
+		 * Initializes the clock object instance. This method will disable the power management
+		 * feature and will not initialize the <code>Wire</code> library. It will call
+		 * <code>initialize(-1, false)</code> and is implemented as an inline function.
+		 *
+		 * @return <code>true</code> if the clock was properly initialized;<code>false</code> otherwise.
+		 * @see DS1307RTC::initialize(int8_t, bool)
 		 */
-    bool initialize(bool withWire);
+    bool initialize();
+
+    /*
+     * Initializes the clock object instance. This method will call
+     * <code>initialize(pin, false)</code> and is implemented as an inline function.
+     *
+     * @param[in] pin the Arduino I/O pin that controls the VCC of the clock chip. If <code>-1</code>
+     *                is passed it is interpreted as no I/O pin connected to the VCC of the clock chip.
+     *
+     * @return <code>true</code> if the clock was properly initialized;<code>false</code> otherwise.
+     * @see DS1307RTC::initialize(int8_t, bool)
+     */
+    bool initialize(int8_t pin);
+
+    /*
+     * Initializes the clock object instance. The <code>DS1307RTC</code> object has to be initialized before
+     * it can be used properly. If not initialized, the proper function is not guaranteed. The initialization
+     * goes through four steps:
+     * <ol>
+     *  <li>
+     *    <b>Power Management</b> - If the specified <code>pin</code> is greater than <code>-1</code>
+     *    power management is enabled.
+     *    The power management function assumes that the specified <code>pin</code> is
+     *    connect to VCC of the DS1307, hence can control the power to the DS1307. Turning off the power will
+     *    send the DS1307 into low power mode and draw it's power from the backup battery. Power will only
+     *    be turned on when data is read from or written to the DS1307.
+     *  <li>
+     *    <b>DS1307 Status</b> - The method will read the <code>second</code> register to see if the DS1307 is started
+     *    or not.
+     *  <li>
+     *    <b>Turn of Squae Wave Generator</b> - The method will turn of the wave generation by calling
+     *    <code>stopSquareWave</code>.
+     *  <li>
+     *    <b>24-hour Mode</b> - The method will make sure that the chip is in 24-hour mode, rather than in
+     *    AM/PM.
+     * <ol>
+     *
+     * @param[in] pin the Arduino I/O pin that controls the VCC of the clock chip. If <code>-1</code>
+     *                is passed it is interpreted as no I/O pin connected to the VCC of the DS1307 and
+     *                power management is turned off.
+     * @param[in] initWire if <code>true</code> is passed, <code>Wire.begin()</code> is called to initialized
+     *                     the I2C bus; otherwise, it is assumed that the I2C bus was initialized externally.
+     *
+     * @return <code>true</code> if the clock was properly initialized;<code>false</code> otherwise.
+     * @see <a href="http://arduino.cc/en/Reference/Wire">Arduino Wire Library</a>
+     */
+    bool initialize(int8_t pin, bool withWire);
 
 		/**
 		 * Start the clock by setting the CH bit (bit seven) of the seconds register).
+		 *
+		 * @return <code>true</code> if the clock could be started;<code>false</code> otherwise.
 		 */
 		bool start();
 	
 		/**
 		 * Stops the clock by clearing the CH bit (bit seven) in the seconds register.
+		 *
+     * @return <code>true</code> if the clock could be started;<code>false</code> otherwise.
 		 */
 		bool stop();
 	
@@ -60,6 +115,8 @@ class DS1307RTC {
 	  int writeUserMemory(byte *buffer, int offset, int len);
 
 	  int readUserMemory(byte *buffer, int offset, int len);
+
+	  byte readControlRegister();
 
 	  bool startSquareWave(DS1307SquareWaveRate rate);
 
@@ -98,15 +155,26 @@ class DS1307RTC {
      */
     int writeBytes(const byte *buffer, int offset, int len);
   private:
+    DS1307RTC();
+
 		uint8_t dec2bcd(uint8_t num);
   	uint8_t bcd2dec(uint8_t num);
 
+//    static DS1307RTC instance = RTC();
+
   	bool running;
   	bool squareWave;
+  	int8_t powerMgmtPin;
 
 };
 
-extern DS1307RTC RTC;
+inline bool DS1307RTC::initialize() {
+  return initialize((int8_t)-1, (bool)false);
+}
+
+inline bool DS1307RTC::initialize(int8_t pin) {
+  return initialize(pin, false);
+}
 
 #endif
  

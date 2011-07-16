@@ -26,6 +26,8 @@
 
 #define DS1307_I2C_ID 0x68
 
+#define I2C_MAX_BYTES_TRANSFER 0x1f
+
 // Memory related constants
 #define DS1307_MEMORY           0x40
 #define DS1307_USERSPACE_START  0x09
@@ -53,22 +55,32 @@
 #define DS1307_MTH_HI     0x30
 
 
+DS1307RTC DS1307RTC::instance = DS1307RTC();
+
 /*
  * Constructor
  */
 DS1307RTC::DS1307RTC() {
-
-  //Wire.begin();
-
-
 }
 
-bool DS1307RTC::initialize(bool withWire) {
+bool DS1307RTC::initialize(int8_t pin, bool withWire) {
   byte buffer;
 
+  // Do we need to initialize the wire library?
   if(withWire) {
     Wire.begin();
   }
+
+  // if the pin is -1, it means no power management. Otherwise there
+  // is a pin that can be used to keep the power requirements for the
+  // RTC at a minimum. Mostly, turning off the power will cause the
+  // clock to go into low power mode instead of standby.
+  powerMgmtPin = pin;
+  if(pin >= 0) {
+    pinMode(powerMgmtPin, OUTPUT);
+    digitalWrite(powerMgmtPin, LOW);
+  }
+
 
   // Check the state of the clock
   if(readBytes(&buffer, 0, 1) == 1) {
@@ -78,7 +90,8 @@ bool DS1307RTC::initialize(bool withWire) {
     return false;
   }
 
-  // TODO: Set squareWave to correct value
+  // At initialization, we turn off the square wave
+  stopSquareWave(false);
   // Change the clock to 24 hr mode
   // TODO: Add that, but for now this is good enough.
 
@@ -179,39 +192,6 @@ bool  DS1307RTC::setTime(time_t t) {
   buffer[4] = dec2bcd(tm.Day);
   buffer[5] = dec2bcd(tm.Month);
   buffer[6] = dec2bcd(tmYearToY2k(tm.Year));
-#ifdef DEBUG
-  Serial.print("Setting Time:[");
-  Serial.print(buffer[0], HEX);
-  Serial.print("] ");
-  Serial.print(tm.Second, DEC);
-  Serial.print(", [");
-  Serial.print(buffer[1], HEX);
-  Serial.print("] ");
-  Serial.print(tm.Minute, DEC);
-  Serial.print(", [");
-  Serial.print(buffer[2], HEX);
-  Serial.print("] ");
-  Serial.print(tm.Hour, DEC);
-  Serial.print(", [");
-  Serial.print(buffer[3], HEX);
-  Serial.print("] ");
-  Serial.print(tm.Wday, DEC);
-  Serial.print(", [");
-  Serial.print(buffer[4], HEX);
-  Serial.print("] ");
-  Serial.print(tm.Day, DEC);
-  Serial.print(", [");
-  Serial.print(buffer[5], HEX);
-  Serial.print("] ");
-  Serial.print(tm.Month, DEC);
-  Serial.print(", [");
-  Serial.print(buffer[6], HEX);
-  Serial.print("] ");
-  Serial.print(tm.Year, DEC);
-  Serial.println(" ...");
-
-
-#endif
 
   buffer[0] |= DS1307_CLOCKHALT;  // stop the clock
   if(writeBytes(buffer, 0, 7) !=7) {
@@ -239,7 +219,7 @@ int8_t DS1307RTC::getTimeZone() {
     return -128;
   }
 
-  return buffer - 12;
+  return (int8_t)buffer - 12;
 }
 
 /*
@@ -268,6 +248,20 @@ int DS1307RTC::writeUserMemory(byte *data, int offset, int len) {
  */
 int DS1307RTC::readUserMemory(byte *buffer, int offset, int len) {
   return readBytes(buffer, offset + DS1307_USERSPACE_START, len);
+}
+
+/*
+ * Read the control register
+ */
+byte DS1307RTC::readControlRegister() {
+  byte ctrlReg = 0;
+
+  if(readBytes(&ctrlReg, DS1307_CONTROL_REG, 1) != 1) {
+    // Something went wrong so return -1
+    return 0xff;
+  }
+
+  return ctrlReg;
 }
 
 /*
@@ -305,25 +299,37 @@ bool DS1307RTC::stopSquareWave(bool out) {
  */
 int DS1307RTC::readBytes(byte *buffer, int offset, int len) {
   int bytes_to_read = 0;
+  int bytes_read = 0;
 
   if(offset < DS1307_MEMORY) {
-    bytes_to_read = ((offset + len) <= DS1307_MEMORY) ? len : DS1307_MEMORY - offset;
+    if(powerMgmtPin >= 0) {
+      // Turn on the power
+      digitalWrite(powerMgmtPin, HIGH);
+    }
+    while((offset < DS1307_MEMORY) && (bytes_read < len)) {
 
-    // Let the DS1307 we want talk to it
-    Wire.beginTransmission(DS1307_I2C_ID);
-    Wire.send(0x00);
-    Wire.endTransmission();
+      // Let the DS1307 we want talk to it
+      Wire.beginTransmission(DS1307_I2C_ID);
+      Wire.send(offset);
+      Wire.endTransmission();
 
-    // Request the number of bytes we want to read and read the bytes
-    // TODO: Test this. There might be a bug that restricts the number of bytes that can be
-    //       read in on shot.
-    Wire.requestFrom(DS1307_I2C_ID, bytes_to_read);
-    for(int i = 0; i < bytes_to_read; i++) {
-      buffer[i] = (unsigned char)Wire.receive();
+      // Request the number of bytes we want to read and read the bytes
+      // I2C will only allow 0x1F in one sweap to be read
+      bytes_to_read = (len - bytes_read) > I2C_MAX_BYTES_TRANSFER ? I2C_MAX_BYTES_TRANSFER : len - bytes_read;
+      bytes_to_read = ((offset + bytes_to_read) <= DS1307_MEMORY) ? bytes_to_read : DS1307_MEMORY - offset;
+      Wire.requestFrom(DS1307_I2C_ID, bytes_to_read);
+      for(int i = 0; i < bytes_to_read; i++) {
+        buffer[bytes_read++] = (unsigned char)Wire.receive();
+      }
+      offset += bytes_to_read;
+    }
+    if(powerMgmtPin >= 0) {
+      // We are done, we can send to clock back into low power mode
+      digitalWrite(powerMgmtPin, LOW);
     }
   }
 
-  return bytes_to_read;
+  return bytes_read;
 }
 
 /*
@@ -331,25 +337,41 @@ int DS1307RTC::readBytes(byte *buffer, int offset, int len) {
  */
 int DS1307RTC::writeBytes(const byte *buffer, int offset, int len) {
   int bytes_to_write = 0;
+  int bytes_written = 0;
 
   if(offset < DS1307_MEMORY) {
-    bytes_to_write = ((offset + len) <= DS1307_MEMORY) ? len : DS1307_MEMORY - offset;
-
-    // Let the DS1307 we want talk to it
-    Wire.beginTransmission(DS1307_I2C_ID);
-    Wire.send(0x00);
-
-    // and send the bytes we want to write
-    // TODO: Test this for the whole clock. There might be a bug that restricts the number of bytes
-    //       that can be written in one shot.
-    for(int i = 0; i < bytes_to_write; i++) {
-      Wire.send(buffer[i]);
+    if(powerMgmtPin >= 0) {
+      // Give the clock power so that we can talk to it.
+      digitalWrite(powerMgmtPin, HIGH);
+      // TODO, check if we need to delay a little here for the clock to get out of low power mode
     }
 
+    while((offset < DS1307_MEMORY) && (bytes_written < len)) {
+
+      bytes_to_write = ((offset + len) <= DS1307_MEMORY) ? len : DS1307_MEMORY - offset;
+
+      // Let the DS1307 we want talk to it
+      Wire.beginTransmission(DS1307_I2C_ID);
+      Wire.send(offset);
+
+      // and send the bytes we want to write
+      // I2C will only allow 0x1F in one sweap to be read
+      bytes_to_write = (len - bytes_written) > I2C_MAX_BYTES_TRANSFER ? I2C_MAX_BYTES_TRANSFER : len - bytes_written;
+      bytes_to_write = ((offset + bytes_to_write) <= DS1307_MEMORY) ? bytes_to_write : DS1307_MEMORY - offset;
+      for(int i = 0; i < bytes_to_write; i++) {
+        Wire.send(buffer[bytes_written++]);
+      }
+      offset += bytes_to_write;
+      Wire.endTransmission();
+    }
     Wire.endTransmission();
+    if(powerMgmtPin >= 0) {
+      // We are done, we can send to clock back into low power mode
+      digitalWrite(powerMgmtPin, LOW);
+    }
   }
 
-  return bytes_to_write;
+  return bytes_written;
 }
 
 //
@@ -368,5 +390,4 @@ uint8_t DS1307RTC::bcd2dec(uint8_t num)
   return ((num/16 * 10) + (num % 16));
 }
 
-DS1307RTC RTC = DS1307RTC(); // create an instance for the user
 
