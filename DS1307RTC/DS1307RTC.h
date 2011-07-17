@@ -3,24 +3,24 @@
  * This library is intended to be uses with Arduino Time.h library functions
  */
 
-#ifndef __DS1307RTC_h__
-#define __DS1307RTC_h__
+#ifndef _DS1307RTC_h_
+#define _DS1307RTC_h_
 
 #include <WProgram.h>
 #include <Time.h>
 
 #define RTC DS1307RTC::instance
 
-typedef enum e_DS1307SquareWaveRate {
-	DS1307_SQWE_1HZ = 0x00,
-	DS1307_SQWE_4096HZ = 0x01,
-	DS1307_SQWE_8192HZ = 0x02,
-	DS1307_SQWE_32768HZ = 0x03
-} DS1307SquareWaveRate;
-
 // library interface description
 class DS1307RTC {
   public:
+    enum SquareWaveRate {
+      SQW_1HZ = 0x00,
+      SQW_4096HZ = 0x01,
+      SQW_8192HZ = 0x02,
+      SQW_32768HZ = 0x03
+    };
+
     static DS1307RTC instance;
 
 		/*
@@ -118,7 +118,7 @@ class DS1307RTC {
 
 	  byte readControlRegister();
 
-	  bool startSquareWave(DS1307SquareWaveRate rate);
+	  bool startSquareWave(SquareWaveRate rate);
 
 	  bool stopSquareWave(bool out);
 

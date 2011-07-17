@@ -267,7 +267,7 @@ byte DS1307RTC::readControlRegister() {
 /*
  * startSquareWave
  */
-bool DS1307RTC::startSquareWave(DS1307SquareWaveRate rate) {
+bool DS1307RTC::startSquareWave(SquareWaveRate rate) {
   byte ctrlReg = DS1307_CTRL_SQWE | rate;
 
   if(writeBytes(&ctrlReg, DS1307_CONTROL_REG, 1) != 1) {
