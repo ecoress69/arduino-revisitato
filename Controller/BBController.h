@@ -3,8 +3,8 @@
  */
 
 
-#ifndef _BBCONTROLLER_H_
-#define _BBCONTROLLER_H_
+#ifndef BBCONTROLLER_H_
+#define BBCONTROLLER_H_
 
 
 class BBController {
@@ -39,7 +39,7 @@ public:
   void printDebug();
   
 private:
-  // Limits for controll function
+  // Limits for control function
   int uMax;
   int u;
   

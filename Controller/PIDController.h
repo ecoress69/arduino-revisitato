@@ -3,8 +3,8 @@
 */
 
 
-#ifndef _PIDCONTROLLER_H_
-#define _PIDCONTROLLER_H_
+#ifndef PIDCONTROLLER_H_
+#define PIDCONTROLLER_H_
 
 
 class PIDController {

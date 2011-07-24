@@ -3,8 +3,8 @@
  * This library is intended to be uses with Arduino Time.h library functions
  */
 
-#ifndef _DS1307RTC_h_
-#define _DS1307RTC_h_
+#ifndef DS1307RTC_h_
+#define DS1307RTC_h_
 
 #include <WProgram.h>
 #include <Time.h>
