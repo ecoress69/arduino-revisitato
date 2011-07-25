@@ -155,12 +155,14 @@ int adjustLineNumber(int lineNumber) {
     return lineNumber - 3;
 }
 
-void TestSuite::suiteAssertTrue(Test& test, bool condition, int lineNumber) {
+bool TestSuite::suiteAssertTrue(Test& test, bool condition, int lineNumber) {
     if (!condition && test.successful) {
         test.successful = false;
         addFailure();
         reporter->reportFailure(test, adjustLineNumber(lineNumber));
     }
+
+    return condition;
 }
 
 /**
@@ -177,7 +179,7 @@ void TestSuite::suiteAssertTrue(Test& test, bool condition, int lineNumber) {
  */
 #define integerToString(integer, string) itoa((integer), (string), 10)
 
-void TestSuite::suiteAssertUnsignedLongEquals(Test& test, unsigned long expected, unsigned long actual, int lineNumber) {
+bool  TestSuite::suiteAssertUnsignedLongEquals(Test& test, unsigned long expected, unsigned long actual, int lineNumber) {
   bool areEqual = (expected == actual);
   if (!areEqual && test.successful) {
       test.successful = false;
@@ -191,9 +193,11 @@ void TestSuite::suiteAssertUnsignedLongEquals(Test& test, unsigned long expected
 
       reporter->reportEqualityFailure(test, adjustLineNumber(lineNumber), expectedBuffer, actualBuffer);
   }
+
+  return areEqual;
 }
 
-void TestSuite::suiteAssertEquals(Test& test, int expected, int actual, int lineNumber) {
+bool TestSuite::suiteAssertEquals(Test& test, int expected, int actual, int lineNumber) {
     bool areEqual = (expected == actual);
     if (!areEqual && test.successful) {
         test.successful = false;
@@ -207,6 +211,8 @@ void TestSuite::suiteAssertEquals(Test& test, int expected, int actual, int line
 
         reporter->reportEqualityFailure(test, adjustLineNumber(lineNumber), expectedBuffer, actualBuffer);
     }
+
+    return areEqual;
 }
 
 void TestSuite::addFailure() {

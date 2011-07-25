@@ -53,8 +53,7 @@ THE SOFTWARE.
  * @param condition boolean condition to check
  */
 #define assertTrue(condition)\
-    __test__.suite->suiteAssertTrue(__test__, (condition), __LINE__);\
-    if (!(condition)) {\
+    if(!__test__.suite->suiteAssertTrue(__test__, (condition), __LINE__)) {\
         return;\
     }
 
@@ -67,8 +66,7 @@ THE SOFTWARE.
  * @param actual actual value
  */
 #define assertEquals(expected, actual)\
-    __test__.suite->suiteAssertEquals(__test__, (expected), (actual), __LINE__);\
-    if ((expected) != (actual)) {\
+    if(!__test__.suite->suiteAssertEquals(__test__, (expected), (actual), __LINE__)) {\
         return;\
     }
 
@@ -81,8 +79,7 @@ THE SOFTWARE.
  * @param actual actual value
  */
 #define assertUnsignedLongEquals(expected, actual)\
-    __test__.suite->suiteAssertUnsignedLongEquals(__test__, (expected), (actual), __LINE__);\
-    if ((expected) != (actual)) {\
+    if(!__test__.suite->suiteAssertUnsignedLongEquals(__test__, (expected), (actual), __LINE__)) {\
         return;\
     }
 

@@ -140,7 +140,7 @@ public:
      * @param condition condition to check
      * @param lineNumber line number on which assertion lives
      */
-    void suiteAssertTrue(Test& test, bool condition, int lineNumber);
+    bool suiteAssertTrue(Test& test, bool condition, int lineNumber);
 
     /**
      * Asserts that two integar values are equal.
@@ -150,7 +150,7 @@ public:
      * @param second second value to test for equality
      * @param lineNumber line number on which assertion lives
      */
-    void suiteAssertEquals(Test& test, int first, int second, int lineNumber);
+    bool suiteAssertEquals(Test& test, int first, int second, int lineNumber);
 
     /**
      * Asserts that two unsigned long values are equal.
@@ -161,7 +161,7 @@ public:
      * @param lineNumber line number on which assertion lives
      */
 
-    void suiteAssertUnsignedLongEquals(Test& test, unsigned long expected, unsigned long actual, int lineNumber);
+    bool suiteAssertUnsignedLongEquals(Test& test, unsigned long expected, unsigned long actual, int lineNumber);
 private:
     /**
      * Adds a failure to this test suite.
