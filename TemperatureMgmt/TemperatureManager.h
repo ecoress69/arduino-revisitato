@@ -68,7 +68,7 @@ class TemperatureManager {
     bool save();
     int getTemperatureProfileID(tmElements_t &te);
     bool loadProfile(tmElements_t &te);
-    int timeToQuarterHour(tmElements_t &te);
+    int timeToQuarterHour(tmElements_t &te, bool roundUp);
 
     /**
      * Calculates the hours, minutes, and seconds of the given time in seconds and returns it.

@@ -49,17 +49,18 @@ time_t TemperatureManager::nextSetPointChange(time_t now) {
   now = adjustTime(now);
 
   // Break time into its elements
+  //This is nasty, but what to do at this point
   breakTime(now, nowTE);
 
   if(loadProfile(nowTE)) {
     // Get the index that matches exact or is larger
-    index = TPROFILE.indexOf(timeToQuarterHour(nowTE), 1);
+    index = TPROFILE.indexOf(timeToQuarterHour(nowTE, true), 1);
     if(index >= 0) {
       TPROFILE.getAt(index, time, temperature);
     }
     else {
       // We need the next profile
-      breakTime(now  - calcTimeOffset(nowTE) + 12L * 3600L, nowTE);
+      breakTime(now + 12L * 3600L, nowTE);
       if (loadProfile(nowTE)) {
         // All we need is the first entry
         TPROFILE.getAt(0, time, temperature);
@@ -71,7 +72,7 @@ time_t TemperatureManager::nextSetPointChange(time_t now) {
   if(time != -1) {
     // The change time is the time given minus offset (find the the beginning time of the profile)
     // plus the time found in the profile (time 15 minutes).
-    changeTime = makeTime(nowTE)  + time * 15L * 60L + (long)_amBegin * 3600L;
+    changeTime = makeTime(nowTE) - calcTimeOffset(nowTE) + time * 15L * 60L + (long)_amBegin * 3600L;
   }
 
   return changeTime;
@@ -88,10 +89,19 @@ int TemperatureManager::getSetPointFor(time_t timeInSeconds) {
 
   // Break the time into its elements
   breakTime(timeInSeconds, te);
+  /*Serial.print(millis());
+  Serial.print("|Time: ");
+  Serial.print(te.Day, DEC);
+  Serial.print("-");
+  Serial.print(te.Hour, DEC);
+  Serial.print(":");
+  Serial.print(te.Minute, DEC);
+  Serial.print(":");
+  Serial.print(te.Second, DEC);*/
 
   if(loadProfile(te)) {
 
-    index = TPROFILE.indexOf(timeToQuarterHour(te), -1);
+    index = TPROFILE.indexOf(timeToQuarterHour(te, false), -1);
     if(index >= 0) {
       TPROFILE.getAt(index, time, temperature);
     }
@@ -103,6 +113,14 @@ int TemperatureManager::getSetPointFor(time_t timeInSeconds) {
         TPROFILE.getAt(TPROFILE.size() - 1, time, temperature);
       }
     }
+    /*
+    Serial.print(", Profile Info:");
+    Serial.print(TPROFILE.getId());
+    Serial.print("-");
+    Serial.print(time);
+    Serial.print("-");
+    Serial.println(temperature);
+    */
   }
 
   return temperature;
@@ -192,9 +210,13 @@ time_t TemperatureManager::adjustTime(time_t time) {
 }
 
 
-int TemperatureManager::timeToQuarterHour(tmElements_t &te) {
+int TemperatureManager::timeToQuarterHour(tmElements_t &te, bool roundUp) {
   int time = te.Hour * 4 + te.Minute / 15;
 
-  return time > 47 ? time - 47 : time;
+  if(roundUp && (te.Second > 0)) {
+    time++;
+  }
+
+  return time > 47 ? time - 48 : time;
 }
 
