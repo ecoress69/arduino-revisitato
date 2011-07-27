@@ -1,0 +1,42 @@
+#######################################
+# Syntax Coloring Map For ACS712
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+ACS712 KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+initialize KEYWORD2
+reset KEYWORD2
+readSensor KEYWORD2
+getIntegerValue KEYWORD2
+getFloatValue KEYWORD2
+getByteValue KEYWORD2
+beginSampling KEYWORD2
+endSampling KEYWORD2
+isSampling KEYWORD2
+clockReset KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+NO_ERROR LITERAL1
+FUNCTION_NOT_SUPPORTED LITERAL1
+SENSOR_INITIALIZATION_ERROR LITERAL1
+SENSOR_NOT_PRESENT LITERAL1
+UNKNOWN_CONFIG LITERAL1
+SYNC_TIMEOUT LITERAL1
+DATA_TIMEOUT LITERAL1
+TOO_QUICK LITERAL1
+CHECKSUM_ERROR LITERAL1
+BUS_ERROR LITERAL1
+

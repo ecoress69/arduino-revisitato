@@ -1,0 +1,33 @@
+#######################################
+# Syntax Coloring Map For Sensor
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+Sensor KEYWORD1
+SensorImpl KEYWORD1
+SensorAdapter KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+initialize KEYWORD2
+reset KEYWORD2
+readSensor KEYWORD2
+getIntegerValue KEYWORD2
+getFloatValue KEYWORD2
+getByteValue KEYWORD2
+beginSampling KEYWORD2
+endSampling KEYWORD2
+isSampling KEYWORD2
+setCalibration KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+
+
+#######################################
+# Constants (LITERAL1)
+#######################################
