@@ -7,12 +7,14 @@
 
 #include "ACS712.h"
 
-ACS712::ACS712(int analogPin, int vccPin)
+ACS712::ACS712()
   : SensorImpl() {
+}
 
+Sensor::Error ACS712::initialize(int analogPin, int vccPin) {
   _vccPin = vccPin;
   _analogPin = analogPin;
-  reset();
+  return reset();
 }
 
 Sensor::Error ACS712::reset() {

@@ -8,14 +8,17 @@
 #ifndef ACS712_H_
 #define ACS712_H_
 
-#include "Sensor.h"
+#include <Sensor.h>
 #include <WProgram.h>
 
 class ACS712: public SensorImpl {
   public:
-    ACS712(int analogPin, int vccPin = -1);
+    ACS712();
 
-    Sensor::Error initialize() {return NO_ERROR; };
+    Sensor::Error initialize(int analogPin, int vccPin = -1);
+    Sensor::Error initialize() {
+      return initialize(0, -1); // Just using PIN as default
+    };
     Sensor::Error reset();
 
     void setCalibration(int offset, float scale = 1.0) {

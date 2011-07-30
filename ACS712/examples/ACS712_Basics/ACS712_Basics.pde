@@ -11,14 +11,14 @@
 int valuesInt[MAX_VALUES];
 float values[MAX_VALUES];
 
-ACS712 acs712(ACS712_ANALOG_PIN, ACS712_VCC_PIN);
+ACS712 acs712;
 Sensor &currentSensor = acs712;
 
 void setup() {
   Serial.begin(57600);
   Serial.println("====== ACS712 Sensor Demo ======");
   Serial.println("Assumption: ACS712 on A0 and D9, current on/off on D8");
-  currentSensor.initialize();
+  acs712.initialize(ACS712_ANALOG_PIN, ACS712_VCC_PIN);
   pinMode(CURRENT_ON_OFF_PIN, OUTPUT);
   digitalWrite(CURRENT_ON_OFF_PIN, LOW);
 } 
