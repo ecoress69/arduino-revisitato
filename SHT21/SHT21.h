@@ -22,66 +22,124 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 
-#ifndef LIB_HUMIDITY_H
-#define LIB_HUMIDITY_H
+#ifndef SHT_21_H
+#define SHT_21_H
 
 #include <WProgram.h>
+#include <Sensor.h>
+
+#define RES_MASK 0x7E
 
 
-typedef enum {
-	eSHT21Address = 0x40,
-} HUM_SENSOR_T;
-
-typedef enum {
-	eTempHoldCmd        = 0xE3,
-	eRHumidityHoldCmd  = 0xE5,
-	eTempNoHoldCmd      = 0xF3,
-	eRHumidityNoHoldCmd = 0xF5,
-	eWriteUserRegister  = 0xE6,
-	eReadUserRegister	= 0xE7,
-	eSoftReset			= 0xFE
-} HUM_MEASUREMENT_CMD_T;
-
-typedef enum {
-	RES_MASK = 0x7E,
-	RES_12_14 = 0x00,
-	RES_10_13 = 0x80,
-	RES_08_12 = 0x01,
-	RES_11_11 = 0x81
-} SENSOR_RESOLUTION_T;
-
-class SHT21 {
+class SHT21 : public SensorImpl {
 	public:
+    enum Address {
+      eSHT21Address = 0x40,
+    };
+
+    enum Commands {
+      eTempHoldCmd        = 0xE3,
+      eRHumidityHoldCmd  = 0xE5,
+      eTempNoHoldCmd      = 0xF3,
+      eRHumidityNoHoldCmd = 0xF5,
+      eWriteUserRegister  = 0xE6,
+      eReadUserRegister = 0xE7,
+      eSoftReset      = 0xFE
+    };
+
+    enum Resolution {
+      RES_12_14 = 0x00,
+      RES_10_13 = 0x80,
+      RES_08_12 = 0x01,
+      RES_11_11 = 0x81
+    };
+
+    enum Mode {
+      TemperatureF = 0x00,
+      TemperatureC = 0x01,
+      Humidity = 0x02
+    };
+
 		SHT21();
 
-		// TODO: pull out the common methods into a super class. Think about a "sensor" class/template
-		//--- General method shared with other temperature/humidity sensors
-    int readSensor() { return readSensor(millis()); };
-    int readSensor(unsigned long timeInMillis);
-		float getHumidity(void);
-		float getTemperature(bool celsius);
-    void clockReset() { clockReset(millis()); };
-    void clockReset(unsigned long timeInMillis);
+		Sensor::Error initialize();
+		Sensor::Error reset();
+
+    /**
+     * Returns the last integer value read from the ADC.
+     *
+     * @param[IN] config is ignored
+     *
+     * @return the last integer value read from the ADC.
+     */
+    int getIntegerValue(int config);
+
+    /**
+     * Returns the last integer value read from the ADC divided by 4. This
+     * method should not be used. Instead, <code>getIntegerValue</code> should
+     * be used to obtain the ADC read out.
+     *
+     * @param[IN] config is ignored
+     *
+     * @return the last integer value read from the ADC.
+     */
+    byte getByteValue(int config);
+
+    /**
+     * Returns the current that was measured in the last reading. The assumption is
+     * that 0A is equivalent to 2.5V. In general, the sensor will require calibration based
+     * on the specific setup and use of <code>setCalibration</code>.
+     *
+     * @param[IN] config is ignored
+     *
+     * @return the current in A that was measured in the last reading.
+     */
+    float getFloatValue(int config);
+
+    /**
+     * Gets the current humidity from the sensor.
+     *
+     * @return float - The relative humidity in %RH
+     */
+		float getHumidity(void) {
+		  return getFloatValue(Humidity);
+		};
+
+		/**
+		 * getTemperature(bool celsius)
+		 *
+		 * @param celsius if set to true the temperature is returned
+		 *                in degrees Celsius; otherwise in Fahrenheit
+		 *
+		 * @return the temperature in Celsius or Fahrenheit
+		 */
+
+		float getTemperature(bool celsius) {
+      return getFloatValue(celsius? TemperatureC : TemperatureF);
+		};
+
 
     //--- Methods specific to the SHT21 sensor
 		uint8_t getUserRegister(void);
-		uint8_t setResolution(SENSOR_RESOLUTION_T res);
-		void reset();
+		uint8_t setResolution(SHT21::Resolution res);
 		
 		void printDebug();
+
+	protected:
+	  Sensor::Error readSensorImpl(unsigned long timeInMillis, int config = 0);
+
 
 	private:
     uint16_t readDelay;
     float calculateHumidity(uint16_t analogHumValue);
     float calculateTemperature(uint16_t analogTempValue);
-    uint16_t readSensorImpl(uint8_t command);
+    uint16_t readSensorValue(uint8_t command);
     uint8_t readUserRegister();
     void writeUserRegister(uint8_t value);
     void writeReset();
 
     float _humidity;
     float _temperature;
-    unsigned long _lastReadTime;
 };
 
 #endif

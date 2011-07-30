@@ -24,7 +24,6 @@
 
 #include <WProgram.h>
 #include <Wire.h>
-//#include <wiring.h>
 #include "SHT21.h"
 
 /******************************************************************************
@@ -35,10 +34,16 @@
  * Initialize the sensor based on the specified type.
  **********************************************************/
 SHT21::SHT21() {
-    Wire.begin();
+//    Wire.begin();
     readDelay = 100;
 }
 
+Sensor::Error SHT21::initialize() {
+  readSensorImpl(millis(), Humidity);
+  readSensorImpl(millis(), TemperatureC);
+
+  return SensorImpl::initialize();
+}
 /******************************************************************************
  * Global Functions
  ******************************************************************************/
@@ -46,46 +51,57 @@ SHT21::SHT21() {
  * Read the sensor
  */
 
-int SHT21::readSensor(unsigned long timeInMillis) {
+Sensor::Error SHT21::readSensorImpl(unsigned long timeInMillis, int config) {
+  if(config == Humidity) {
+    _humidity = calculateHumidity(readSensorValue(eRHumidityHoldCmd));
+  }
+  else {
+    _temperature = calculateTemperature(readSensorValue(eTempHoldCmd));
+  }
 
-  _lastReadTime = timeInMillis;
-  // TODO: make sure the sensor doesn't get read too often
-
-  _humidity = calculateHumidity(readSensorImpl(eRHumidityHoldCmd));
-  _temperature = calculateTemperature(readSensorImpl(eTempHoldCmd));
-
-  return 0;
-}
-/**********************************************************
- * GetHumidity
- *  Gets the current humidity from the sensor.
- *
- * @return float - The relative humidity in %RH
- **********************************************************/
-float SHT21::getHumidity(void) {
-    return _humidity;
+  return NO_ERROR;
 }
 
-/**********************************************************
- * getTemperature(bool celsius)
- * 
- * @param celsius if set to true the temperature is returned
- *                in degrees Celsius; otherwise in Fahrenheit
- *
- * @return the temperature in Celsius or Fahrenheit
- **********************************************************/
-float SHT21::getTemperature(bool celsius) {
-  if(!celsius) {
+float SHT21::getFloatValue(int config = 0) {
+  if(config == TemperatureF) {
     return _temperature * 1.8 + 32;
   }
-	return _temperature;
+  else if(config == Humidity) {
+    return _humidity;
+  }
+
+  return _temperature;
 }
+
+// return temperature time 8 => 0.125 degrees resolution
+int SHT21::getIntegerValue(int config = 0) {
+  if(config == TemperatureF) {
+    return (int)round((_temperature * 1.8 + 32) * 3);
+  }
+  else if(config == Humidity) {
+    return (int)round(_humidity * 3);
+  }
+
+  return (int)round(_temperature * 8);
+}
+
+byte SHT21::getByteValue(int config = 0) {
+  if(config == TemperatureF) {
+    return (byte)round(_temperature * 1.8 + 32);
+  }
+  else if(config == Humidity) {
+    return (byte)round(_humidity);
+  }
+
+  return (byte)round(_temperature);
+}
+
 
 uint8_t SHT21::getUserRegister(void) {
 	return readUserRegister();
 }
 
-uint8_t SHT21::setResolution(SENSOR_RESOLUTION_T res) {
+uint8_t SHT21::setResolution(SHT21::Resolution res) {
 	uint8_t reg;
 	
 	reg = getUserRegister();
@@ -111,15 +127,18 @@ uint8_t SHT21::setResolution(SENSOR_RESOLUTION_T res) {
 	return reg;
 }
 
-void SHT21::reset() {
+Sensor::Error SHT21::reset() {
 	writeReset();
+
+	return SensorImpl::reset();
+;
 }
 
 /******************************************************************************
  * Private Functions
  ******************************************************************************/
 
-uint16_t SHT21::readSensorImpl(uint8_t command) {
+uint16_t SHT21::readSensorValue(uint8_t command) {
 	uint16_t result;
 
 	Wire.beginTransmission(eSHT21Address);   //begin
@@ -136,6 +155,7 @@ uint16_t SHT21::readSensorImpl(uint8_t command) {
 	result = ((Wire.receive()) << 8);
 	result += Wire.receive();
 	result &= ~0x0003;   // clear two low bits (status bits)
+
 	return result;
 }
 
@@ -151,6 +171,8 @@ uint8_t SHT21::readUserRegister() {
 		delay(5);
 	}
 	result = Wire.receive();
+
+	return result;
 }
 
 void SHT21::writeUserRegister(uint8_t value) {
@@ -175,12 +197,6 @@ float SHT21::calculateHumidity(uint16_t analogHumValue) {
   //-- calculate relative humidity [%RH] --
   // RH= -6 + 125 * SRH/2^16
   return -6.0 + 125.0 / 65536.0 * analogHumValue;
-}
-
-
-void SHT21::clockReset(unsigned long timeInMillis)
-{
-  _lastReadTime = timeInMillis;
 }
 
 void SHT21::printDebug() {
