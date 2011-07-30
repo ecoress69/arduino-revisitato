@@ -20,7 +20,9 @@ public:
    *                        when no energy is applied (cooling down) to how long it takes to reach the
    *                        setpoint when energy is applied.
    */
-  bool updateSetpoint(float setpoint, float tolerance, float y);
+  bool updateSetpoint(float setpoint, float y);
+
+  void setTolerance(float tolerance) { _tolerance = tolerance; };
 
   /**
    * @return <code>true</code> if <code>newMode</code> changed the mode of the controller. This will require

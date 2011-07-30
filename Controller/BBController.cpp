@@ -18,9 +18,8 @@ bool BBController::setMode(Mode mode) {
   return false;
 }
 
-bool BBController::updateSetpoint(float setpoint, float tolerance, float y) {
+bool BBController::updateSetpoint(float setpoint, float y) {
   _setpoint = setpoint;
-  _tolerance = tolerance;
   _state = CONTROL_WAIT;
   return controlOn(y, 0);
 }
