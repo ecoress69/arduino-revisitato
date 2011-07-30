@@ -156,13 +156,13 @@ bool TemperatureManager::load() {
   int addr = _memoryAddr;
   if(addr >= 0) {
     _timeOfYear = (int8_t)EEPROM.read(addr++);
-    _vacationTemperature[SUMMER] = (uint8_t)EEPROM.read(addr++);
-    _vacationTemperature[WINTER] = (uint8_t)EEPROM.read(addr++);
+    _vacationTemperature[SUMMER] = (int8_t)EEPROM.read(addr++);
+    _vacationTemperature[WINTER] = (int8_t)EEPROM.read(addr++);
 
     for(int i = 0; i < MAX_DAYS; i++) {
       for(int j = 0; j < MAX_TIME_OF_DAY; j ++) {
         for(int k = 0; k < MAX_TIME_OF_YEAR; k++) {
-          _profiles[i][j][k] = (uint8_t)EEPROM.read(addr++);
+          _profiles[i][j][k] = (int8_t)EEPROM.read(addr++);
         }
       }
     }

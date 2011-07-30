@@ -11,7 +11,7 @@
 #include <WProgram.h>
 
 #ifndef TEMPERATUREPROFILE_SLOTS
-#define TEMPERATUREPROFILE_SLOTS 10
+#define TEMPERATUREPROFILE_SLOTS 6
 #endif
 
 // Change TP_ARRAY_OFFSET from 1 to 0 to test the integrity of the underlying array
@@ -25,7 +25,7 @@
 
 #define TIME 0
 #define TEMPERATURE 1
-#define MAX_NAME_SIZE 12
+#define MAX_NAME_SIZE 2
 
 
 class TemperatureProfile {

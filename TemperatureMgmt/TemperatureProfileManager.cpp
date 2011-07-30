@@ -182,24 +182,13 @@ int TemperatureProfileManager::find(int id) {
 }
 
 inline int8_t TemperatureProfileManager::readByte(int addr) {
-  int8_t value = EEPROM.read(addr);
-  /*
-  Serial.print("Reading addr ");
-   Serial.print(addr);
-   Serial.print(" with ");
-   Serial.println(value, DEC);*/
-  return value;
+  return (int8_t) EEPROM.read(addr);
 }
 
-void TemperatureProfileManager::writeByte(int addr, int8_t value) {
+inline void TemperatureProfileManager::writeByte(int addr, int8_t value) {
   EEPROM.write(addr, value);
-  /*
-  Serial.print("Writing addr ");
-  Serial.print(addr);
-  Serial.print(" with ");
-  Serial.println(value, DEC); */
 }
 
-bool TemperatureProfileManager::isInitialized() {
+inline bool TemperatureProfileManager::isInitialized() {
   return _maxNumOfProfiles > 0;
 }
