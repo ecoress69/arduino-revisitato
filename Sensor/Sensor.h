@@ -123,8 +123,7 @@ class SensorImpl: public Sensor  {
     virtual Sensor::Error initialize();
     virtual Sensor::Error reset();
 
-    Sensor::Error readSensor(int config = 0) { return readSensor(millis(), config); };
-    virtual Sensor::Error readSensor(unsigned long timeInMillis, int config = 0) { return readSensorImpl(timeInMillis); };
+    Sensor::Error readSensor(unsigned long timeInMillis, int config = 0) { return readSensorImpl(timeInMillis); };
 
     // Default implementations
     virtual int getIntegerValue(int config = 0) { return 0; };
@@ -137,7 +136,6 @@ class SensorImpl: public Sensor  {
     bool isSampling() { return _sampling; };
 
 
-    void clockReset() { clockReset(millis()); };
     void clockReset(unsigned long timeInMillis) {_lastReadTime = timeInMillis; };
 
     unsigned long lastReadTime() { return _lastReadTime; };
@@ -146,7 +144,7 @@ class SensorImpl: public Sensor  {
     // Default implementations will return no error, so code can be generalized
     virtual Sensor::Error beginSamplingImpl() { return NO_ERROR; };
     virtual Sensor::Error endSamplingImpl() { return NO_ERROR; };
-    virtual Sensor::Error readSensorImpl(unsigned long timeInMillis, int config = 0) { return NO_ERROR; };
+    virtual Sensor::Error readSensorImpl(unsigned long timeInMillis, int config = 0) { return FUNCTION_NOT_SUPPORTED; };
 
   private:
     unsigned long _lastReadTime;
@@ -157,11 +155,10 @@ class SensorAdapter:public Sensor {
   public:
     SensorAdapter(Sensor *sensor, int config);
 
-    virtual Sensor::Error initialize() = 0;
-    virtual Sensor::Error reset() = 0;
+    Sensor::Error initialize() { return _sensor->initialize(); };
+    Sensor::Error reset()  { return _sensor->initialize(); };
 
-    Sensor::Error readSensor(int config = 0) { return readSensor(millis()); };
-    virtual Sensor::Error readSensor(unsigned long timeInMillis, int config = 0) {
+    Sensor::Error readSensor(unsigned long timeInMillis, int config = 0) {
       return _sensor->readSensor(timeInMillis, config ? config :_config);
     };
 
@@ -185,7 +182,7 @@ class SensorAdapter:public Sensor {
      * @see Sensor::readSensor(long, int)
      * @see Sensor::getIntegerValue(int)
      */
-    virtual int getIntegerValue(int config = 0) { return _sensor->getIntegerValue(config ? config :_config); };
+    int getIntegerValue(int config = 0) { return _sensor->getIntegerValue(config ? config :_config); };
 
     /**
      * Returns the last byte value read by the sensor of this adapter. This method simply calls
@@ -207,7 +204,7 @@ class SensorAdapter:public Sensor {
      * @see Sensor::readSensor(long, int)
      * @see Sensor::getByteValue(int)
      */
-    virtual byte getByteValue(int config = 0) { return _sensor->getByteValue(config ? config :_config); };
+    byte getByteValue(int config = 0) { return _sensor->getByteValue(config ? config :_config); };
 
     /**
      * Returns the last float value read by the sensor of this adapter. This method simply calls
@@ -229,7 +226,7 @@ class SensorAdapter:public Sensor {
      * @see Sensor::readSensor(long, int)
      * @see Sensor::getFloatValue(int)
      */
-    virtual float getFloatValue(int config = 0) { return _sensor->getFloatValue(config ? config :_config); };
+    float getFloatValue(int config = 0) { return _sensor->getFloatValue(config ? config :_config); };
 
     // Sampling, only relevant if there is energy management involved, i.e. sensor is turn on and off
     Sensor::Error beginSampling() { return _sensor->beginSampling(); };
@@ -237,8 +234,9 @@ class SensorAdapter:public Sensor {
     bool isSampling() { return _sensor->isSampling(); };
 
 
-    void clockReset() { clockReset(millis()); };
     void clockReset(unsigned long timeInMillis) {  _sensor->clockReset(); };
+    unsigned long lastReadTime() { return _sensor->lastReadTime(); };
+
   private:
     Sensor* _sensor;
     int _config;
