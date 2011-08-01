@@ -283,7 +283,7 @@ bool DS1307RTC::startSquareWave(SquareWaveRate rate) {
  * stopSquarWave
  */
 bool DS1307RTC::stopSquareWave(bool out) {
-  byte ctrlReg = (out) ? 0x00 : 0x80;
+  byte ctrlReg = (out) ? 0x80 : 0x00;
 
   if(writeBytes(&ctrlReg, DS1307_CONTROL_REG, 1) != 1) {
     return false;
