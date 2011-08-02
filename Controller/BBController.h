@@ -21,15 +21,19 @@ public:
    *                        setpoint when energy is applied.
    */
   bool updateSetpoint(float setpoint, float y);
+  float getSetpoint() { return _setpoint; };
+
 
   void setTolerance(float tolerance) { _tolerance = tolerance; };
-
+  float getTolerance() { return _tolerance; };
   /**
    * @return <code>true</code> if <code>newMode</code> changed the mode of the controller. This will require
    *         a call to <code>updateSetpoint</code>. <code>false</code> will be returned if <code>mode</code>
    *         did not change the mode of the controller, i.e. the controller was already in <code>mode</code>.
    */
   bool setMode(Mode mode);
+  BBController::Mode getMode() { return _mode; };
+
 
   bool controlOn(float y);
 

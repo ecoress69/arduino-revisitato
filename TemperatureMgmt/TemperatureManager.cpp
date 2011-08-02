@@ -131,6 +131,8 @@ bool TemperatureManager::loadProfile(tmElements_t &te) {
 
   // Get the id of the profile that applies to the given time
   profileId = getTemperatureProfileID(te);
+  //Serial.print("Profile id");
+  //Serial.println(profileId);
   if(profileId >= 0) {
     // Load the profile into memory
     if(TPM.load(profileId)) {
@@ -193,6 +195,36 @@ bool TemperatureManager::save() {
 
   return false;
 }
+
+void TemperatureManager::printDebug() {
+  int addr = _memoryAddr;
+
+
+  Serial.print("Memory Address: 0x");
+  Serial.print(_memoryAddr, HEX);
+  Serial.print(" Time of Year: ");
+  Serial.print(_timeOfYear, DEC);
+  Serial.print(" Vacation (Summer/Winter: ");
+  Serial.print(_vacationTemperature[SUMMER], DEC);
+  Serial.print("/");
+  Serial.println(_vacationTemperature[WINTER], DEC);
+  Serial.print("[");
+  for(int i = 0; i < MAX_DAYS; i++) {
+    Serial.print("[");
+    for(int j = 0; j < MAX_TIME_OF_DAY; j ++) {
+      Serial.print("[ ");
+      for(int k = 0; k < MAX_TIME_OF_YEAR; k++) {
+        if(k != 0) {
+          Serial.print(", ");
+        }
+        Serial.print(_profiles[i][j][k]);
+      }
+      Serial.print("], ");
+    }
+    Serial.println("], ");
+  }
+}
+
 
 
 long TemperatureManager::calcTimeOffset(tmElements_t &te) {

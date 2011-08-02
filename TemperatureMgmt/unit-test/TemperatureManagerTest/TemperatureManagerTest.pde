@@ -50,6 +50,9 @@ void setup() {
   TEMPMGR.setProfile(12, TemperatureManager::FRIDAY, TemperatureManager::PM, TemperatureManager::SUMMER);
   TEMPMGR.setProfile(13, TemperatureManager::SATURDAY, TemperatureManager::AM, TemperatureManager::SUMMER);
   TEMPMGR.setProfile(14, TemperatureManager::SATURDAY, TemperatureManager::PM, TemperatureManager::SUMMER);
+  // This will for to re-read the info from the EEPROM
+  TemperatureManager::setMemoryInfo(0);
+  TemperatureManager::setMemoryInfo(MEM_ADDR);
 }
 
 void loop() {

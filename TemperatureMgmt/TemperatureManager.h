@@ -62,6 +62,8 @@ class TemperatureManager {
      */
     void clear();
 
+    void printDebug();
+
   private:
     TemperatureManager();
     bool load();
