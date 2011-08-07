@@ -22,53 +22,50 @@
  */
 
 #include <Wire.h>
-#include "DS1307RTC.h"
+#include "DS1339.h"
 
-#define DS1307_I2C_ID 0x68
+#define DS1339_I2C_ID 0x68
 
 #define I2C_MAX_BYTES_TRANSFER 0x1f
 
 // Memory related constants
-#define DS1307_MEMORY           0x40
-#define DS1307_USERSPACE_START  0x09
-#define DS1307_CONTROL_REG      0x07
-#define DS1307_TIME_ZONE_REG    0x08
+#define DS1339_MEMORY           0x40
+#define DS1339_USERSPACE_START  0x09
+#define DS1339_CONTROL_REG      0x07
+#define DS1339_TIME_ZONE_REG    0x08
 
 // Bit masks
-#define DS1307_CLOCKHALT  0x80
-#define DS1307_CTRL_OUT   0x80
-#define DS1307_CTRL_SQWE  0x10
-#define DS1307_CTRL_RS    0x03
+#define DS1339_CLOCKHALT  0x80
+#define DS1339_CTRL_OUT   0x80
+#define DS1339_CTRL_SQWE  0x10
+#define DS1339_CTRL_RS    0x03
 
-#define DS1307_BCD_LO     0x0f
-#define DS1307_BCD_HI     0xf0
+#define DS1339_BCD_LO     0x0f
+#define DS1339_BCD_HI     0xf0
 
-#define DS1307_SEC_MASK   0x7f
+#define DS1339_SEC_MASK   0x7f
 
-#define DS1307_HR_MASK    0x3f
-#define DS1307_AM_PM      0x30
-#define DS1307_12_24      0x40
-
-
-#define DS1307_DOW_LOW    0x07
-#define DS1307_DATE_HI    0x30
-#define DS1307_MTH_HI     0x30
+#define DS1339_HR_MASK    0x3f
+#define DS1339_AM_PM      0x30
+#define DS1339_12_24      0x40
 
 
-DS1307RTC DS1307RTC::instance = DS1307RTC();
+#define DS1339_DOW_LOW    0x07
+#define DS1339_DATE_HI    0x30
+#define DS1339_MTH_HI     0x30
+
+
+DS1339 DS1339::instance = DS1339();
 
 /*
  * Constructor
  */
-DS1307RTC::DS1307RTC() {
+DS1339::DS1339() {
 }
 
-bool DS1307RTC::initialize(int8_t pin, bool withWire) {
+bool DS1339::initialize(int8_t pin, bool withWire) {
   byte buffer;
 
-  _lastTime = 0;
-  _lastMillis = 0;
-  _timezone = 0;
   // Do we need to initialize the wire library?
   if(withWire) {
     Wire.begin();
@@ -87,7 +84,7 @@ bool DS1307RTC::initialize(int8_t pin, bool withWire) {
 
   // Check the state of the clock
   if(readBytes(&buffer, 0, 1) == 1) {
-    running = !(buffer & DS1307_CLOCKHALT);
+    running = !(buffer & DS1339_CLOCKHALT);
   }
   else {
     return false;
@@ -104,7 +101,7 @@ bool DS1307RTC::initialize(int8_t pin, bool withWire) {
  * start - will always force the clock to stop, no matter what the cached parameter
  * <code>running</code> says. Allows to get the clock back in a defined status.
  */
-bool DS1307RTC::start() {
+bool DS1339::start() {
   byte seconds;
 
   //  Read the seconds byte
@@ -113,16 +110,14 @@ bool DS1307RTC::start() {
   }
 
   // Clear the CH bit in the register
-  seconds &= DS1307_SEC_MASK;
+  seconds &= DS1339_SEC_MASK;
 
   // Write it back
   if(writeBytes(&seconds, 0, 1) != 1) {
     return false;
   }
-  running = true;
 
-  readTime();
-  readTimeZone();
+  running = true;
 
   return true;
 }
@@ -132,7 +127,7 @@ bool DS1307RTC::start() {
  * <code>running</code> says. Allows to get the clock back in a defined status.
  *
  */
-bool DS1307RTC::stop() {
+bool DS1339::stop() {
   byte seconds;
 
   //  Read the seconds byte
@@ -141,7 +136,7 @@ bool DS1307RTC::stop() {
   }
 
   // Set the CH bit in the register
-  seconds |= DS1307_CLOCKHALT;
+  seconds |= DS1339_CLOCKHALT;
 
   // Write it back
   if(writeBytes(&seconds, 0, 1) != 1) {
@@ -156,62 +151,36 @@ bool DS1307RTC::stop() {
 /*
  * isRunning
  */
-bool DS1307RTC::isRunning() {
+bool DS1339::isRunning() {
   return running;
 }
 
 
-bool DS1307RTC::readTime() {
-  byte buffer[7];
-  time_t now;
-  unsigned long currentMillis;
-  tmElements_t tm;
-
-  if(readBytes(buffer, 0, 7) == 7) {
-    tm.Second = bcd2dec(buffer[0] & DS1307_SEC_MASK);
-    tm.Minute = bcd2dec(buffer[1]);
-    tm.Hour =  bcd2dec(buffer[2] & DS1307_HR_MASK);  // mask assumes 24hr clock
-    tm.Wday = bcd2dec(buffer[3]);
-    tm.Day = bcd2dec(buffer[4]);
-    tm.Month = bcd2dec(buffer[5]);
-    tm.Year = y2kYearToTm((bcd2dec(buffer[6])));
-  }
-
-  now = makeTime(tm);
-  currentMillis = millis(); // This might now work properly if power save modes are used
-  if(_lastTime != 0) {
-    if(now > _lastTime) {
-      if((now - _lastTime) < 3600L) {
-        // It seems to be a proper time read
-        _lastTime = now;
-        _lastMillis = currentMillis;
-        return true;
-      }
-    }
-
-  }
-  else {
-    _lastTime = now;
-    _lastMillis = currentMillis;
-    return true;
-  }
-
-  // Failed to properly read the time, client can decide what to do
-  return false;
-}
-
 /*
  * getTime
  */
-time_t DS1307RTC::getTime() {
-  // use current millis to decide to automatically read the time again
-  return(_lastTime + (millis() - _lastMillis)/1000);
+time_t DS1339::getTime()   // Aquire data from buffer and convert to time_t
+{
+  byte buffer[7];
+  tmElements_t tm;
+
+   if(readBytes(buffer, 0, 7) == 7) {
+     tm.Second = bcd2dec(buffer[0] & DS1339_SEC_MASK);
+     tm.Minute = bcd2dec(buffer[1]);
+     tm.Hour =  bcd2dec(buffer[2] & DS1339_HR_MASK);  // mask assumes 24hr clock
+     tm.Wday = bcd2dec(buffer[3]);
+     tm.Day = bcd2dec(buffer[4]);
+     tm.Month = bcd2dec(buffer[5]);
+     tm.Year = y2kYearToTm((bcd2dec(buffer[6])));
+   }
+
+  return(makeTime(tm));
 }
 
 /*
  * setTime
  */
-bool  DS1307RTC::setTime(time_t t) {
+bool  DS1339::setTime(time_t t) {
   byte buffer[7];
   tmElements_t tm;
 
@@ -224,56 +193,45 @@ bool  DS1307RTC::setTime(time_t t) {
   buffer[5] = dec2bcd(tm.Month);
   buffer[6] = dec2bcd(tmYearToY2k(tm.Year));
 
-  buffer[0] |= DS1307_CLOCKHALT;  // stop the clock
+  buffer[0] |= DS1339_CLOCKHALT;  // stop the clock
   if(writeBytes(buffer, 0, 7) !=7) {
     return false;
   }
 
   if(isRunning()) {
-    buffer[0] &= DS1307_SEC_MASK;
+    buffer[0] &= DS1339_SEC_MASK;
     if(writeBytes(buffer, 0, 7) != 7) {
       return false;
     }
   }
 
-  _lastTime = t;
-  _lastMillis = millis();
-
   return true;
-}
-
-int8_t DS1307RTC::getTimeZone() {
-  return _timezone;
 }
 
 /*
  * getTimeZone - timezone is offset by 12 when it is written, hence it needs to be
  * reversed.
  */
-bool DS1307RTC::readTimeZone() {
+int8_t DS1339::getTimeZone() {
   byte buffer;
 
-  if(readBytes(&buffer, DS1307_TIME_ZONE_REG, 1) != 1) {
-    return false;
+  if(readBytes(&buffer, DS1339_TIME_ZONE_REG, 1) != 1) {
+    return -128;
   }
 
-  _timezone = (int8_t)buffer - 12;
-
-  return true;
+  return (int8_t)buffer - 12;
 }
 
 /*
  * setTimeZone - to avoid negative values and conversion problems between signed and unsigned,
  * the time zone is offset by 12, i.e. it is always positive from 0 to 24 when written.
  */
-bool DS1307RTC::setTimeZone(int8_t tz) {
+bool DS1339::setTimeZone(int8_t tz) {
   byte buffer = tz + 12;
 
-  if(writeBytes(&buffer, DS1307_TIME_ZONE_REG, 1) != 1) {
+  if(writeBytes(&buffer, DS1339_TIME_ZONE_REG, 1) != 1) {
     return false;
   }
-
-  _timezone = tz;
 
   return true;
 }
@@ -281,24 +239,24 @@ bool DS1307RTC::setTimeZone(int8_t tz) {
 /*
  * writeUserMemory - the user memory starts at byte 0x09 (0x08 is used for the timezone)
  */
-int DS1307RTC::writeUserMemory(byte *data, int offset, int len) {
-  return writeBytes(data, offset + DS1307_USERSPACE_START, len);
+int DS1339::writeUserMemory(byte *data, int offset, int len) {
+  return writeBytes(data, offset + DS1339_USERSPACE_START, len);
 }
 
 /*
  * readUserMemory
  */
-int DS1307RTC::readUserMemory(byte *buffer, int offset, int len) {
-  return readBytes(buffer, offset + DS1307_USERSPACE_START, len);
+int DS1339::readUserMemory(byte *buffer, int offset, int len) {
+  return readBytes(buffer, offset + DS1339_USERSPACE_START, len);
 }
 
 /*
  * Read the control register
  */
-byte DS1307RTC::readControlRegister() {
+byte DS1339::readControlRegister() {
   byte ctrlReg = 0;
 
-  if(readBytes(&ctrlReg, DS1307_CONTROL_REG, 1) != 1) {
+  if(readBytes(&ctrlReg, DS1339_CONTROL_REG, 1) != 1) {
     // Something went wrong so return -1
     return 0xff;
   }
@@ -309,10 +267,10 @@ byte DS1307RTC::readControlRegister() {
 /*
  * startSquareWave
  */
-bool DS1307RTC::startSquareWave(SquareWaveRate rate) {
-  byte ctrlReg = DS1307_CTRL_SQWE | rate;
+bool DS1339::startSquareWave(SquareWaveRate rate) {
+  byte ctrlReg = DS1339_CTRL_SQWE | rate;
 
-  if(writeBytes(&ctrlReg, DS1307_CONTROL_REG, 1) != 1) {
+  if(writeBytes(&ctrlReg, DS1339_CONTROL_REG, 1) != 1) {
     return false;
   }
 
@@ -324,10 +282,10 @@ bool DS1307RTC::startSquareWave(SquareWaveRate rate) {
 /*
  * stopSquarWave
  */
-bool DS1307RTC::stopSquareWave(bool out) {
+bool DS1339::stopSquareWave(bool out) {
   byte ctrlReg = (out) ? 0x80 : 0x00;
 
-  if(writeBytes(&ctrlReg, DS1307_CONTROL_REG, 1) != 1) {
+  if(writeBytes(&ctrlReg, DS1339_CONTROL_REG, 1) != 1) {
     return false;
   }
 
@@ -339,27 +297,27 @@ bool DS1307RTC::stopSquareWave(bool out) {
 /*
  * readBytes
  */
-int DS1307RTC::readBytes(byte *buffer, int offset, int len) {
+int DS1339::readBytes(byte *buffer, int offset, int len) {
   int bytes_to_read = 0;
   int bytes_read = 0;
 
-  if(offset < DS1307_MEMORY) {
+  if(offset < DS1339_MEMORY) {
     if(powerMgmtPin >= 0) {
       // Turn on the power
       digitalWrite(powerMgmtPin, HIGH);
     }
-    while((offset < DS1307_MEMORY) && (bytes_read < len)) {
+    while((offset < DS1339_MEMORY) && (bytes_read < len)) {
 
-      // Let the DS1307 we want talk to it
-      Wire.beginTransmission(DS1307_I2C_ID);
+      // Let the DS1339 we want talk to it
+      Wire.beginTransmission(DS1339_I2C_ID);
       Wire.send(offset);
       Wire.endTransmission();
 
       // Request the number of bytes we want to read and read the bytes
       // I2C will only allow 0x1F in one sweap to be read
       bytes_to_read = (len - bytes_read) > I2C_MAX_BYTES_TRANSFER ? I2C_MAX_BYTES_TRANSFER : len - bytes_read;
-      bytes_to_read = ((offset + bytes_to_read) <= DS1307_MEMORY) ? bytes_to_read : DS1307_MEMORY - offset;
-      Wire.requestFrom(DS1307_I2C_ID, bytes_to_read);
+      bytes_to_read = ((offset + bytes_to_read) <= DS1339_MEMORY) ? bytes_to_read : DS1339_MEMORY - offset;
+      Wire.requestFrom(DS1339_I2C_ID, bytes_to_read);
       for(int i = 0; i < bytes_to_read; i++) {
         buffer[bytes_read++] = (unsigned char)Wire.receive();
       }
@@ -377,29 +335,29 @@ int DS1307RTC::readBytes(byte *buffer, int offset, int len) {
 /*
  * writeBytes
  */
-int DS1307RTC::writeBytes(const byte *buffer, int offset, int len) {
+int DS1339::writeBytes(const byte *buffer, int offset, int len) {
   int bytes_to_write = 0;
   int bytes_written = 0;
 
-  if(offset < DS1307_MEMORY) {
+  if(offset < DS1339_MEMORY) {
     if(powerMgmtPin >= 0) {
       // Give the clock power so that we can talk to it.
       digitalWrite(powerMgmtPin, HIGH);
       // TODO, check if we need to delay a little here for the clock to get out of low power mode
     }
 
-    while((offset < DS1307_MEMORY) && (bytes_written < len)) {
+    while((offset < DS1339_MEMORY) && (bytes_written < len)) {
 
-      bytes_to_write = ((offset + len) <= DS1307_MEMORY) ? len : DS1307_MEMORY - offset;
+      bytes_to_write = ((offset + len) <= DS1339_MEMORY) ? len : DS1339_MEMORY - offset;
 
-      // Let the DS1307 we want talk to it
-      Wire.beginTransmission(DS1307_I2C_ID);
+      // Let the DS1339 we want talk to it
+      Wire.beginTransmission(DS1339_I2C_ID);
       Wire.send(offset);
 
       // and send the bytes we want to write
       // I2C will only allow 0x1F in one sweap to be read
       bytes_to_write = (len - bytes_written) > I2C_MAX_BYTES_TRANSFER ? I2C_MAX_BYTES_TRANSFER : len - bytes_written;
-      bytes_to_write = ((offset + bytes_to_write) <= DS1307_MEMORY) ? bytes_to_write : DS1307_MEMORY - offset;
+      bytes_to_write = ((offset + bytes_to_write) <= DS1339_MEMORY) ? bytes_to_write : DS1339_MEMORY - offset;
       for(int i = 0; i < bytes_to_write; i++) {
         Wire.send(buffer[bytes_written++]);
       }
@@ -421,13 +379,13 @@ int DS1307RTC::writeBytes(const byte *buffer, int offset, int len) {
 //
 
 // Convert Decimal to Binary Coded Decimal (BCD)
-uint8_t DS1307RTC::dec2bcd(uint8_t num)
+uint8_t DS1339::dec2bcd(uint8_t num)
 {
   return ((num/10 * 16) + (num % 10));
 }
 
 // Convert Binary Coded Decimal (BCD) to Decimal
-uint8_t DS1307RTC::bcd2dec(uint8_t num)
+uint8_t DS1339::bcd2dec(uint8_t num)
 {
   return ((num/16 * 10) + (num % 16));
 }

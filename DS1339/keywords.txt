@@ -1,0 +1,42 @@
+#######################################
+# Syntax Coloring Map For DS1307RTC
+#######################################
+
+#######################################
+# Datatypes (KEYWORD1)
+#######################################
+DS1307RTC KEYWORD1
+DS1307SquareWaveRate KEYWORD1
+
+#######################################
+# Methods and Functions (KEYWORD2)
+#######################################
+initialize KEYWORD2
+start KEYWORD2
+stop KEYWORD2
+isRunning KEYWORD2
+getTimeZone KEYWORD2
+setTimeZone KEYWORD2
+writeUserMemory KEYWORD2
+readUserMemory KEYWORD2
+readControlRegister KEYWORD2
+startSquareWave KEYWORD2
+stopSquareWave KEYWORD2
+getTime	KEYWORD2
+setTime KEYWORD2
+readBytes KEYWORD2
+writeBytes KEYWORD2
+
+#######################################
+# Instances (KEYWORD2)
+#######################################
+RTC KEYWORD2
+instance KEYWORD2
+
+#######################################
+# Constants (LITERAL1)
+#######################################
+DS1307_SQWE_1HZ LITERAL1
+DS1307_SQWE_4096HZ LITERAL1
+DS1307_SQWE_8192HZ LITERAL1
+DS1307_SQWE_32768HZ LITERAL1
